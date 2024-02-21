@@ -9,12 +9,11 @@ from .core.pattern_recognizer import PatternRecognizer
 from .core.pdf_downloader import PdfDownloader
 
 
-def get_pdf_name(arxiv_info):
+def get_pdf_name(arxiv_info, paper_alias=''):
     _id = arxiv_info['id']
-    title = arxiv_info['title'].replace(' ', '_')
+    title = paper_alias if paper_alias else arxiv_info['title'].replace(' ', '_')
     author = arxiv_info['author'][0].replace(' ', '_') + '_et_al'
-
-    pdf_name = f'{_id}_{title}_{author}.pdf'
+    pdf_name = f'{title}_{author}_{_id}.pdf'
     return pdf_name
 
 
@@ -54,7 +53,8 @@ def get_md_files(md_file_or_dir):
 
 def download_from_mds(md_file_or_dir, output_pdf_dir='.'):
     arxiv_api = ArxivApi()
-    pattern_recognizer = PatternRecognizer(r'{{https://arxiv.org/abs/\d{4}.\d{5}}}')
+    pattern_recognizer = PatternRecognizer(r'- (.*)({{https://arxiv.org/abs/\d{4}.\d{5}}})')
+    pattern_recognizer_replace = PatternRecognizer(r'{{https://arxiv.org/abs/\d{4}.\d{5}}}')
     pdf_downloader = PdfDownloader()
 
     md_files = get_md_files(md_file_or_dir)
@@ -72,12 +72,13 @@ def download_from_mds(md_file_or_dir, output_pdf_dir='.'):
         for url_idx, arxiv_url in enumerate(arxiv_urls):
             try:
                 logger.info(f'url-loop ==> {url_idx}: {arxiv_url}')
-                arxiv_url_with_braces = arxiv_url
-                arxiv_url = arxiv_url[2:-2]
+                paper_alias = arxiv_url[0].strip().replace(':', '')
+                arxiv_url_with_braces = arxiv_url[1]
+                arxiv_url = arxiv_url_with_braces[2:-2]
                 arxiv_id = arxiv_url.split('/')[-1]
                 arxiv_info = arxiv_api.fetch_arxiv_info(arxiv_id)
                 pdf_link = arxiv_info['pdf']
-                pdf_path = Path(output_pdf_dir) / get_pdf_name(arxiv_info)
+                pdf_path = Path(output_pdf_dir) / get_pdf_name(arxiv_info, paper_alias)
                 pdf_path.parent.mkdir(parents=True, exist_ok=True)
 
                 pdf_downloader.download(pdf_link, pdf_path)
@@ -86,7 +87,7 @@ def download_from_mds(md_file_or_dir, output_pdf_dir='.'):
             except Exception as e:
                 logger.warning(f'url-loop ==> {url_idx}: {arxiv_url} failed: {e}')
         
-        replaced_content = pattern_recognizer.multiple_replace(content, **replace_dict)
+        replaced_content = pattern_recognizer_replace.multiple_replace(content, **replace_dict)
         with open(md_file, 'w') as f:
             f.write(replaced_content)
         logger.info(f'md-loop ==> {md_idx}: {md_file} updated')

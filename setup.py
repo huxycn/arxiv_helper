@@ -6,7 +6,15 @@ setup(
     author='huxiaoyang',
     author_email='545960442@qq.com',
 
-    install_requires=[],
+    install_requires=[
+        'fire',
+        'loguru',
+        'requests',
+        'feedparser',
+        'tabulate',
+        'unidecode',
+        'tenacity'
+    ],
 
     entry_points={
       'console_scripts': [
