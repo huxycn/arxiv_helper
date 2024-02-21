@@ -88,7 +88,7 @@ def download_from_mds(md_file_or_dir, output_pdf_dir='.'):
                 logger.warning(f'url-loop ==> {url_idx}: {arxiv_url} failed: {e}')
         
         replaced_content = pattern_recognizer_replace.multiple_replace(content, **replace_dict)
-        with open(md_file, 'w') as f:
+        with open(Path(md_file).with_stem(Path(md_file).stem + '_updated'), 'w') as f:
             f.write(replaced_content)
         logger.info(f'md-loop ==> {md_idx}: {md_file} updated')
 
